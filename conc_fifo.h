@@ -24,6 +24,7 @@ typedef struct conc_queue {
 
 typedef generic_node_t* conc_node;
 
+int conc_fifo_init(conc_queue*);     // Queue initialization
 int conc_fifo_push(conc_queue*, void*);     // Inserts a generic node at the tail of the list
 void* conc_fifo_pop(conc_queue*);     // Removes the generic node at the list's head
 int conc_fifo_isEmpty(conc_queue*);     // Returns TRUE if the list is empty, ELSE otherwise
