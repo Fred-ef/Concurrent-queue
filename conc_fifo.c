@@ -83,7 +83,16 @@ int conc_fifo_isEmpty(conc_queue* queue) {
   int temperr;
   temperr=pthread_mutex_lock(&((queue->head)->node_mtx));
   if(temperr) {errno=temperr; return ERR;}
-  if(!((queue->head)->next)) return TRUE;
+
+  if(!((queue->head)->next)) {      // If empty, return TRUE
+    temperr=pthread_mutex_unlock(&((queue->head)->node_mtx));
+    if(temperr) {errno=temperr; return ERR;}
+    return TRUE;
+  }
+  
+  // else, unlock mutex and return FALSE
+  temperr=pthread_mutex_unlock(&((queue->head)->node_mtx));
+  if(temperr) {errno=temperr; return ERR;}
 
   return FALSE;
 }
@@ -116,4 +125,59 @@ int fifo_dealloc_full(conc_queue* queue) {
 
     if(queue) free(queue);
     return SUCCESS;
+}
+
+
+
+
+
+
+
+void* t_fun_pari(void* arg) {
+  int i;
+  pid_t tid=gettid();
+  printf("Thread %d: let's begin\n", tid);
+  conc_queue* list=(conc_queue*)arg;
+  for(i=0; i<100; i++) {
+    int* i_p=(int*)malloc(sizeof(int));
+    (*i_p)=i;
+    if(conc_fifo_push(list, (void*)i_p)) return (void*)1;
+  }
+
+  return (void*)NULL;
+}
+
+void* t_fun_dispari(void* arg) {
+  int i;
+  int* temp;
+  conc_queue* list=(conc_queue*)arg;
+  for(i=0; i<100; i++) {
+    temp=(int*)conc_fifo_pop(list);
+    if(temp) printf("%d\n", (*temp));
+  }
+
+  return (void*)NULL;
+}
+
+int main() {
+  int i;
+  int temperr;
+
+  conc_queue* list=(conc_queue*)malloc(sizeof(conc_queue));
+  conc_fifo_init(list);
+
+  pthread_t* t_array = (pthread_t*)malloc(10*sizeof(pthread_t));
+  for(i=0; i<10; i++) {
+    
+    if((i%2)==0) pthread_create(&(t_array[i]), NULL, t_fun_pari, (void*)list);
+    else pthread_create(&(t_array[i]), NULL, t_fun_dispari, (void*)list);
+    
+    // pthread_create(&(t_array[i]), NULL, t_fun_pari, (void*)list);
+    printf("Spawned thread %d\n", i);
+  }
+
+  for(i=0; i<10; i++) {
+    pthread_join(t_array[i], NULL);
+    printf("Joined thread %d\n", i);
+  }
 }

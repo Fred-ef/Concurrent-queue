@@ -10,7 +10,7 @@
 #define FALSE 0
 
 typedef struct conc_queue {
-    generic_node_t* head;
+    conc_node head;
 } conc_queue;
 
 int conc_fifo_init(conc_queue*);     // Queue initialization
