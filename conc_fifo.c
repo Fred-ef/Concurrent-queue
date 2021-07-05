@@ -4,14 +4,8 @@
 int conc_fifo_init(conc_queue* queue) {
     if(!queue) {errno=EINVAL; return ERR;}
 
-    int temperr;
-    queue->head=(conc_node)malloc(sizeof(generic_node_t));
-    if(!(queue->head)) {errno=temperr; return ERR;}
-
-    (queue->head)->data=NULL;
-    (queue->head)->next=NULL;
-    temperr=pthread_mutex_init(&((queue->head)->node_mtx), NULL);
-    if(temperr) {errno=temperr; return ERR;}
+    queue->head=conc_node_create(NULL);
+    if(!(queue->head)) return ERR;
 
     return SUCCESS;
 }
@@ -22,12 +16,8 @@ int conc_fifo_push(conc_queue* queue, void* data) {
     if(!(queue->head)) {errno=EINVAL; return ERR;}     // Uninitialized list
 
     int temperr;
-    conc_node newelement=(conc_node)malloc(sizeof(generic_node_t));     // Creation of the new tail-to-be
+    conc_node newelement=conc_node_create(data);
     if(!newelement) return ERR;     // errno already set
-    newelement->data=data;     // Initializes the data of the new element
-    newelement->next=NULL;     // Temporarily equates the next element of the new element to NULL value
-    temperr=pthread_mutex_init(&(newelement->node_mtx), NULL);      // Initializes new element's mutex
-    if(temperr) {errno=temperr; free(newelement); return ERR;}
 
     temperr=pthread_mutex_lock(&((queue->head)->node_mtx));
     if(temperr) {errno=temperr; free(newelement); return ERR;}
@@ -61,8 +51,6 @@ void* conc_fifo_pop(conc_queue* queue) {
     if(!(queue->head)) {errno=EINVAL; return (void*)NULL;}     // Uninitialized list
 
     int temperr;
-    void* tempdata=NULL;
-
     temperr=pthread_mutex_lock(&((queue->head)->node_mtx));
     if(temperr) {errno=temperr; return (void*)NULL;}
 
@@ -78,17 +66,13 @@ void* conc_fifo_pop(conc_queue* queue) {
     if(temperr) {errno=temperr; return (void*)NULL;}
 
     (queue->head)->next=aux->next;
-    tempdata=aux->data;
-    aux->next=NULL;
+
     temperr=pthread_mutex_unlock(&((queue->head)->node_mtx));
     if(temperr) {errno=temperr; return (void*)NULL;}
     temperr=pthread_mutex_unlock(&(aux->node_mtx));
     if(temperr) {errno=temperr; return (void*)NULL;}
-    temperr=pthread_mutex_destroy(&(aux->node_mtx));
-    if(temperr) {errno=temperr; return (void*)NULL;}
 
-    free(aux);
-    return (void*)tempdata;
+    return (conc_node_destroy(aux));
 }
 
 // Returns TRUE if the list is empty, ELSE otherwise

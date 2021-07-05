@@ -3,26 +3,15 @@
 #ifndef conc_fifo_h
 #define conc_fifo_h
 
-#include <stdlib.h>
-#include <pthread.h>
-#include <errno.h>
-
-#define ERR (-1)     // Definition of the error value
-#define SUCCESS (0)     // Definition of the success value
+#include "conc_elem.h"
+#define SUCCESS 0
+#define ERR -1
 #define TRUE 1
 #define FALSE 0
-
-typedef struct generic_node_t {
-  void* data;
-  struct generic_node_t* next;
-  pthread_mutex_t node_mtx;
-} generic_node_t;
 
 typedef struct conc_queue {
     generic_node_t* head;
 } conc_queue;
-
-typedef generic_node_t* conc_node;
 
 int conc_fifo_init(conc_queue*);     // Queue initialization
 int conc_fifo_push(conc_queue*, void*);     // Inserts a generic node at the tail of the list
